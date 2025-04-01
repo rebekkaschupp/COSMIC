@@ -778,7 +778,7 @@ class Worker(object):
         binfrac_list = []
 
         # Full primary mass vector across 0.08 < M1 < 150
-        M1 = np.linspace(0, 150, 150000) + 0.08
+        M1 = np.linspace(5, 150, 150000) #+ 0.08
         # Slope = -2.3 for M1 > 1 Msun
         fM1 = M1**(-2.3)
         # Slope = -1.6 for M1 = 0.5 - 1.0 Msun
