@@ -271,10 +271,11 @@ class MultiDim:
     # ;
     def initial_sample(
         self,
-        M1min=0.08,
-        M2min=0.08,
-        M1max=150.0,
-        M2max=150.0,
+        M1min=15.0,
+        #TAG change the M2 here for mass range selection (before: min 0.08, max 150.0)
+        M2min=15.0,
+        M1max=60.0,
+        M2max=60.0,
         porb_lo=0.15,
         porb_hi=8.0,
         rand_seed=0,
@@ -778,7 +779,8 @@ class Worker(object):
         binfrac_list = []
 
         # Full primary mass vector across 0.08 < M1 < 150
-        M1 = np.linspace(5, 150, 150000) #+ 0.08
+        #TAG change max and min masses here, originally ??
+        M1 = np.linspace(15, 60, 150000) #+ 0.08
         # Slope = -2.3 for M1 > 1 Msun
         fM1 = M1**(-2.3)
         # Slope = -1.6 for M1 = 0.5 - 1.0 Msun
@@ -832,8 +834,9 @@ class Worker(object):
                 # If M1 < 0.8 Msun, truncate q distribution and consider
                 # only mass ratios q > q_min = 0.08 / M1
                 mycumqdist = cumqdist[:, indlogP, indM1].flatten()
-                if(myM1 < 0.8):
-                    q_min = 0.08 / myM1
+                if 1: #(myM1 < 0.8):
+                    #TAG test different q selection for M2min, orig 0.08
+                    q_min = 15.0 / myM1
                     # Calculate cumulative probability at q = q_min
                     cum_qmin = np.interp(q_min, qv, mycumqdist)
                     # Rescale and renormalize cumulative distribution for q > q_min
@@ -845,16 +848,33 @@ class Worker(object):
 
                 # Given M1 & P, select q from cumulative mass ratio distribution
                 myq = np.interp(np.random.rand(), mycumqdist, qv)
+#TAG changed original to get proper M2min
+#                if ((myM1 > M1min) and (myq * myM1 > M2min) and (myM1 < M1max) and
+#                   (myq * myM1 < M2max) and (mylogP < porb_hi) and (mylogP > porb_lo)):
+                myM2 = myq * myM1
 
-                if ((myM1 > M1min) and (myq * myM1 > M2min) and (myM1 < M1max) and
-                   (myq * myM1 < M2max) and (mylogP < porb_hi) and (mylogP > porb_lo)):
+                if ((myM1 > M1min) and (myM1 < M1max) and
+                    (myM2 > M2min) and (myM2 < M2max) and
+                    (mylogP < porb_hi) and (mylogP > porb_lo)):
+
+                    if myM2 < M2min:
+                        print(f"DEBUG: myM2 = {myM2} unter M2min = {M2min}")
+
                     primary_mass_list.append(myM1)
-                    secondary_mass_list.append(myq * myM1)
+                    secondary_mass_list.append(myM2)
+
+                    #primary_mass_list.append(myM1)
+                    #secondary_mass_list.append(myq * myM1)
+
+
+#TAG back to original code
+                    
                     porb_list.append(10**mylogP)
                     ecc_list.append(mye)
                     binfrac_list.append(mybinfrac)
                 mass_binaries += myM1
-                mass_binaries += myq * myM1
+                #mass_binaries += myq * myM1
+                mass_binaries += myM2
                 n_binaries += 1
             else:
                 mass_singles += myM1
