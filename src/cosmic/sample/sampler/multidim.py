@@ -40,6 +40,10 @@ def get_multidim_sampler(
     SF_duration,
     met,
     size,
+    #TAG added the mass arguments with defaults
+    m1_min = 0.08,
+    m2_min = 0.08,
+    m_max = 150.,
     **kwargs
 ):
     """adapted version of Maxwell Moe's IDL code that generates a population of single and binary stars
@@ -134,9 +138,9 @@ def get_multidim_sampler(
     porb_hi = kwargs.pop("porb_hi", 8.0)
     pool = kwargs.pop("pool", None)
     mp_seeds = kwargs.pop("mp_seeds", None)
-
+#TAG added the mass ranges to the arguments of mass_min_max_select()
     primary_min, primary_max, secondary_min, secondary_max = utils.mass_min_max_select(
-        final_kstar1, final_kstar2
+        final_kstar1, final_kstar2, m1_min=m1_min, m2_min=m2_min, m_max=m_max
     )
 
     initconditions = MultiDim()
@@ -271,11 +275,10 @@ class MultiDim:
     # ;
     def initial_sample(
         self,
-        M1min=15.0,
-        #TAG change the M2 here for mass range selection (before: min 0.08, max 150.0)
-        M2min=15.0,
-        M1max=60.0,
-        M2max=60.0,
+        M1min=0.08,
+        M2min=0.08,
+        M1max=150.0,
+        M2max=150.0,
         porb_lo=0.15,
         porb_hi=8.0,
         rand_seed=0,
@@ -779,8 +782,8 @@ class Worker(object):
         binfrac_list = []
 
         # Full primary mass vector across 0.08 < M1 < 150
-        #TAG change max and min masses here, originally ??
-        M1 = np.linspace(15, 60, 150000) #+ 0.08
+        #TAG change max and min masses here
+        M1 = np.linspace(M1min, M1max, 150000) #+ 0.08
         # Slope = -2.3 for M1 > 1 Msun
         fM1 = M1**(-2.3)
         # Slope = -1.6 for M1 = 0.5 - 1.0 Msun
@@ -836,7 +839,7 @@ class Worker(object):
                 mycumqdist = cumqdist[:, indlogP, indM1].flatten()
                 if 1: #(myM1 < 0.8):
                     #TAG test different q selection for M2min, orig 0.08
-                    q_min = 15.0 / myM1
+                    q_min = M2min / myM1
                     # Calculate cumulative probability at q = q_min
                     cum_qmin = np.interp(q_min, qv, mycumqdist)
                     # Rescale and renormalize cumulative distribution for q > q_min
@@ -856,9 +859,6 @@ class Worker(object):
                 if ((myM1 > M1min) and (myM1 < M1max) and
                     (myM2 > M2min) and (myM2 < M2max) and
                     (mylogP < porb_hi) and (mylogP > porb_lo)):
-
-                    if myM2 < M2min:
-                        print(f"DEBUG: myM2 = {myM2} unter M2min = {M2min}")
 
                     primary_mass_list.append(myM1)
                     secondary_mass_list.append(myM2)
